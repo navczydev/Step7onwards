@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
+import 'package:solution_07_backdrop/api.dart';
 
 import 'category.dart';
 import 'unit.dart';
@@ -95,11 +96,22 @@ class _UnitConverterState extends State<UnitConverter> {
     return outputNum;
   }
 
-  void _updateConversion() {
-    setState(() {
-      _convertedValue =
-          _format(_inputValue * (_toValue.conversion / _fromValue.conversion));
-    });
+  void _updateConversion() async {
+    // if [Category] is currency call api else proceed normally
+    if (widget.category.name == apiCategory['name']) {
+      // call api to convert the data
+      final api = Api();
+      final conversion = await api.convert(apiCategory['route'],
+          _inputValue.toString(), _fromValue.name, _toValue.name);
+      setState(() {
+        _convertedValue = _format(conversion);
+      });
+    } else {
+      setState(() {
+        _convertedValue = _format(
+            _inputValue * (_toValue.conversion / _fromValue.conversion));
+      });
+    }
   }
 
   void _updateInputValue(String input) {

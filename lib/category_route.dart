@@ -84,11 +84,16 @@ class _CategoryRouteState extends State<CategoryRoute> {
       print('Key is $key - Content ${data[key]}');
       final List<Unit> units =
           data[key].map<Unit>((dynamic data) => Unit.fromJson(data)).toList();
+      String iconName = key.toString().toLowerCase();
+      iconName = iconName.replaceAll(' ', '_');
+      if(iconName == "energy"){
+        iconName = 'currency';
+      }
       var category = Category(
         name: key,
         units: units,
         color: _baseColors[Random().nextInt(3)],
-        iconLocation: _icons[Random().nextInt(8)],
+        iconLocation: "assets/icons/$iconName.png",
       );
       setState(() {
         if (categoryIndex == 0) {

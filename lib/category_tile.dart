@@ -27,8 +27,7 @@ class CategoryTile extends StatelessWidget {
     Key key,
     @required this.category,
     @required this.onTap,
-  })
-      : assert(category != null),
+  })  : assert(category != null),
         assert(onTap != null),
         super(key: key);
 
@@ -63,20 +62,22 @@ class CategoryTile extends StatelessWidget {
               children: [
                 Padding(
                   padding: EdgeInsets.all(16.0),
-                  child: Icon(
-                    category.iconLocation,
-                    size: 60.0,
-                    color: Colors.lightBlue,
+                  child: AspectRatio(
+                    aspectRatio: 3 / 2,
+                    child: Image.asset(
+                      category.iconLocation,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 Center(
                   child: Text(
                     category.name,
                     textAlign: TextAlign.center,
-                    style: Theme
-                        .of(context)
+                    style: Theme.of(context)
                         .textTheme
-                        .headline5.copyWith(color: Colors.lightBlue),
+                        .headline5
+                        .copyWith(color: Colors.lightBlue),
                   ),
                 ),
               ],

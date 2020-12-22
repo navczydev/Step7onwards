@@ -109,10 +109,9 @@ class _CategoryRouteState extends State<CategoryRoute> {
 
   /// Retrieves a [Category] and its [Unit]s from an API on the web
   Future<void> _retrieveApiCategory() async {
+    final route = apiCategory['route'];
     final api = Api();
-    final jsonUnits = await api.getUnits(apiCategory['route']);
-    // If the API errors out or we have no internet connection, this category
-    // remains in placeholder mode (disabled)
+    final jsonUnits = await api.getUnits(route);
     if (jsonUnits != null) {
       final units = <Unit>[];
       for (var unit in jsonUnits) {
@@ -124,7 +123,7 @@ class _CategoryRouteState extends State<CategoryRoute> {
           name: apiCategory['name'],
           units: units,
           color: _baseColors.last,
-          iconLocation: "assets/icons/currency.png",
+          iconLocation: "assets/icons/$route.png",
         ));
       });
     }

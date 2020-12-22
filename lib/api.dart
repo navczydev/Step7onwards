@@ -31,7 +31,8 @@ class Api {
   /// The API endpoint we want to hit.
   ///
   /// This API doesn't have a key but often, APIs do require authentication
-  final String BASE_URL = 'flutter.udacity.com';
+  final String BASE_URL = 'flucom';
+  final String BASE_URL_ORIGINAL = 'flutter.udacity.com';
 
   /// Gets all the units and conversion rates for a given category.
   ///
@@ -40,7 +41,7 @@ class Api {
   ///
   /// Returns a list. Returns null on error.
   Future<List> getUnits(String category) async {
-    final uri = Uri.https(BASE_URL, '/$category');
+    final uri = Uri.https(BASE_URL_ORIGINAL, '/$category');
     final jsonResponse = await _getJson(uri);
     if (jsonResponse == null || jsonResponse['units'] == null) {
       print('Error retrieving units.');
@@ -54,7 +55,7 @@ class Api {
   /// Returns a double, which is the converted amount. Returns null on error.
   Future<double> convert(
       String category, String amount, String fromUnit, String toUnit) async {
-    final uri = Uri.https(BASE_URL, '/$category/convert',
+    final uri = Uri.https(BASE_URL_ORIGINAL, '/$category/convert',
         {'amount': amount, 'from': fromUnit, 'to': toUnit});
     final jsonResponse = await _getJson(uri);
     if (jsonResponse == null || jsonResponse['status'] == null) {

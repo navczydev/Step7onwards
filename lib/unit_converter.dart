@@ -2,9 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:meta/meta.dart';
 import 'package:solution_07_backdrop/api.dart';
+import 'package:connectivity/connectivity.dart';
 
 import 'category.dart';
 import 'unit.dart';
@@ -27,18 +31,74 @@ class UnitConverter extends StatefulWidget {
 }
 
 class _UnitConverterState extends State<UnitConverter> {
+  String _connectionStatus = 'Unknown';
+  final Connectivity _connectivity = Connectivity();
+  StreamSubscription<ConnectivityResult> _connectivitySubscription;
+
   Unit _fromValue;
   Unit _toValue;
   double _inputValue;
   String _convertedValue = '';
   List<DropdownMenuItem> _unitMenuItems;
   bool _showValidationError = false;
+  bool _showErrorUI = false;
+  bool _connectivityProblem = false;
 
   @override
   void initState() {
     super.initState();
     _createDropdownMenuItems();
     _setDefaults();
+    initConnectivity();
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+  }
+
+  // Platform messages are asynchronous, so we initialize in an async method.
+  Future<void> initConnectivity() async {
+    ConnectivityResult result;
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      result = await _connectivity.checkConnectivity();
+    } on PlatformException catch (e) {
+      print(e.toString());
+    }
+
+    // If the widget was removed from the tree while the asynchronous platform
+    // message was in flight, we want to discard the reply rather than calling
+    // setState to update our non-existent appearance.
+    if (!mounted) {
+      return Future.value(null);
+    }
+
+    return _updateConnectionStatus(result);
+  }
+
+  Future<void> _updateConnectionStatus(ConnectivityResult result) async {
+    switch (result) {
+      case ConnectivityResult.wifi:
+      case ConnectivityResult.mobile:
+        setState(() {
+          _connectivityProblem = false;
+          _connectionStatus = result.toString();
+        });
+        break;
+      case ConnectivityResult.none:
+        setState(() {
+          _connectionStatus = result.toString();
+          _connectivityProblem = true;
+        });
+        break;
+      default:
+        setState(() => _connectivityProblem = true);
+        break;
+    }
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
   }
 
   @override
@@ -103,9 +163,15 @@ class _UnitConverterState extends State<UnitConverter> {
       final api = Api();
       final conversion = await api.convert(apiCategory['route'],
           _inputValue.toString(), _fromValue.name, _toValue.name);
-      setState(() {
-        _convertedValue = _format(conversion);
-      });
+      if (conversion == null) {
+        setState(() {
+          _showErrorUI = true;
+        });
+      } else {
+        setState(() {
+          _convertedValue = _format(conversion);
+        });
+      }
     } else {
       setState(() {
         _convertedValue = _format(
@@ -290,25 +356,68 @@ class _UnitConverterState extends State<UnitConverter> {
     );
 
     // DONE: Use an OrientationBuilder to add a width to the unit converter
+    if (_showErrorUI && widget.category.name == apiCategory['name']) {
+      return getErrorWidget('Error to fetch data');
+    } else if (_connectivityProblem &&
+        widget.category.name == apiCategory['name']) {
+      return getErrorWidget('No network found');
+    } else {
+      return Padding(
+          padding: _padding,
+          // RenderFlex overflow issue fix
+          //child: SingleChildScrollView(child: converter));
+          child: OrientationBuilder(
+              builder: (BuildContext context, Orientation orientation) {
+            if (orientation == Orientation.portrait) {
+              return ListView.builder(
+                itemBuilder: (BuildContext context, int index) {
+                  return _widgets[index];
+                },
+                itemCount: _widgets.length,
+              );
+            } else {
+              // in landscape mode
+              return SingleChildScrollView(
+                  child:
+                      Center(child: Container(width: 400.0, child: converter)));
+            }
+          }));
+    }
+  }
+
+  Widget getErrorWidget(String message) {
     return Padding(
         padding: _padding,
-        // RenderFlex overflow issue fix
-        //child: SingleChildScrollView(child: converter));
-        child: OrientationBuilder(
-            builder: (BuildContext context, Orientation orientation) {
-          if (orientation == Orientation.portrait) {
-            return ListView.builder(
-              itemBuilder: (BuildContext context, int index) {
-                return _widgets[index];
-              },
-              itemCount: _widgets.length,
-            );
-          } else {
-            // in landscape mode
-            return SingleChildScrollView(
-                child:
-                    Center(child: Container(width: 400.0, child: converter)));
-          }
-        }));
+        child: SingleChildScrollView(
+            child: Center(
+                child: Container(
+                    width: 400.0,
+                    height: 100.0,
+                    decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(16.0),
+                        border:
+                            Border.all(color: Colors.lightBlue, width: 6.0)),
+                    child: Center(
+                        child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: Colors.blue,
+                          size: 48.0,
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            message,
+                            style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontStyle: FontStyle.normal,
+                                fontSize: 24.0),
+                          ),
+                        ),
+                      ],
+                    ))))));
   }
 }
